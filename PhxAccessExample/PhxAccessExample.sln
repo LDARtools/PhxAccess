@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhxAccessExample", "PhxAccessExample\PhxAccessExample.csproj", "{7EFD3102-42A9-4C05-B045-38594E73EB60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhxAccessExample.Android", "PhxAccessExample.Android\PhxAccessExample.Android.csproj", "{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LDARtools.PhxAccess", "..\PhxAccess\LDARtools.PhxAccess.csproj", "{2F48F283-CAFA-43E9-99BC-8B20152D7668}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7EFD3102-42A9-4C05-B045-38594E73EB60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EFD3102-42A9-4C05-B045-38594E73EB60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EFD3102-42A9-4C05-B045-38594E73EB60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EFD3102-42A9-4C05-B045-38594E73EB60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{051A5E5B-7A76-41EE-824C-0CC8A7F0E3E9}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{2F48F283-CAFA-43E9-99BC-8B20152D7668}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F48F283-CAFA-43E9-99BC-8B20152D7668}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F48F283-CAFA-43E9-99BC-8B20152D7668}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F48F283-CAFA-43E9-99BC-8B20152D7668}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B3FA700D-D5EA-4B58-A7EF-256828A64865}
+	EndGlobalSection
+EndGlobal

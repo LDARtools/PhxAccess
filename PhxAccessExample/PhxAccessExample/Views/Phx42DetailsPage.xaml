@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mvvm="http://prismlibrary.com"
+             mc:Ignorable="d"
+             x:Class="PhxAccessExample.Views.Phx42DetailsPage"
+             mvvm:ViewModelLocator.AutowireViewModel="True"
+             Title="{Binding Name}">
+    <ContentPage.Content>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Frame BorderColor="Gainsboro">
+                <StackLayout Orientation="Vertical" VerticalOptions="Center">
+                    <Label Text="{Binding PpmLabel}" FontSize="Header" FontAttributes="Bold" HorizontalOptions="Center"/>
+                    <Label Text="PPM" HorizontalOptions="Center"/>
+                </StackLayout>
+            </Frame>
+            <Frame Grid.Row="1" BorderColor="Gainsboro">
+                <StackLayout Orientation="Vertical">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="{Binding H2Level}" VerticalOptions="Center" />
+                        <Slider Grid.Column="1" Minimum="0" Maximum="2000" Value="{Binding H2Level, Mode=TwoWay}" MinimumTrackColor="Blue" ThumbColor="Blue"/>
+                    </Grid>
+                    <Label Text="H2 (PSI)" HorizontalOptions="Center"/>
+                </StackLayout>
+            </Frame>
+            <Frame Grid.Row="2" BorderColor="Gainsboro">
+                <StackLayout Orientation="Vertical">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="{Binding BatteryPercent}" VerticalOptions="Center"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding BatteryPercent, Mode=TwoWay}" MinimumTrackColor="Blue" ThumbColor="Blue"/>
+                    </Grid>
+                    <Label Text="Battery Percent Charged" HorizontalOptions="Center"/>
+                </StackLayout>
+            </Frame>
+            <Frame Grid.Row="3" CornerRadius="100" WidthRequest="200" HeightRequest="200" BackgroundColor="LawnGreen" HorizontalOptions="Center" Margin="5">
+                <Label Text="Ignite" FontSize="Large" FontAttributes="Bold" TextColor="White" VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="TapGestureRecognizer_OnTapped"
+                            NumberOfTapsRequired="1" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer
+                        Tapped="TapGestureRecognizer_OnTapped"
+                        NumberOfTapsRequired="1" />
+                </Frame.GestureRecognizers>
+                <Frame.Triggers>
+                    <DataTrigger TargetType="Frame" Binding="{Binding CanIgnite}" Value="False">
+                        <Setter Property="BackgroundColor" Value="DarkGray"></Setter>
+                    </DataTrigger>
+                </Frame.Triggers>
+            </Frame>
+            <Label Grid.Row="4" Text="{Binding Status}" Margin="5"/>
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>

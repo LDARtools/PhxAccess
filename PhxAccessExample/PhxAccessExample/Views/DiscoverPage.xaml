@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mvvm="http://prismlibrary.com"
+             xmlns:views="clr-namespace:PhxAccessExample.Views;assembly=PhxAccessExample"
+             mc:Ignorable="d"
+             Title="{Binding Title}"
+             x:Class="PhxAccessExample.Views.DiscoverPage"
+             mvvm:ViewModelLocator.AutowireViewModel="True">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+
+            <DataTemplate x:Key="unknownTemplate">
+                <ViewCell>
+                    <Frame CornerRadius="5" BorderColor="Gainsboro" Padding="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                            </Grid.ColumnDefinitions>
+                            <Frame BackgroundColor="DarkGray"/>
+                            <Label Grid.Column="1" Text="{Binding Name}" FontSize="Large" TextColor="DarkGray" VerticalOptions="Center" Margin="10"/>
+                            <Frame Grid.Column="2" BackgroundColor="DarkGray"/>
+                        </Grid>
+                    </Frame>
+                </ViewCell>
+            </DataTemplate>
+
+            <DataTemplate x:Key="phx42Template">
+                <ViewCell>
+                    <Frame CornerRadius="5" BorderColor="Gainsboro" Padding="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                            </Grid.ColumnDefinitions>
+                            <Frame BackgroundColor="Blue"/>
+                            <Label Grid.Column="1" Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" VerticalOptions="Center" Margin="10"/>
+                            <Frame Grid.Column="2" BackgroundColor="Blue"/>
+                        </Grid>
+                    </Frame>
+                </ViewCell>
+            </DataTemplate>
+
+            <DataTemplate x:Key="phx21Template">
+                <ViewCell>
+                    <Frame CornerRadius="5" BorderColor="Gainsboro" Padding="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                            </Grid.ColumnDefinitions>
+                            <Frame BackgroundColor="Orange"/>
+                            <Label Grid.Column="1" Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" VerticalOptions="Center" Margin="10"/>
+                            <Frame Grid.Column="2" BackgroundColor="Orange"/>
+                        </Grid>
+                    </Frame>
+                </ViewCell>
+            </DataTemplate>
+
+            <views:DeviceTypeTemplateSelector x:Key="DeviceTypeTemplateSelector"
+                                              UnknownTemplate="{StaticResource unknownTemplate}"
+                                              Phx42Template="{StaticResource phx42Template}"
+                                              Phx21Template="{StaticResource phx21Template}"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ContentPage.Content>
+        <Frame BorderColor="Gainsboro" Margin="3">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+            
+                <ListView x:Name="ItemsListView"
+                          ItemsSource="{Binding DiscoveredDevices}"
+                          SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
+                          VerticalOptions="FillAndExpand"
+                          HasUnevenRows="true"
+                          RefreshCommand="{Binding DiscoverCommand}"
+                          IsPullToRefreshEnabled="true"
+                          IsRefreshing="{Binding IsBusy, Mode=OneWay}"
+                          CachingStrategy="RecycleElement"
+                          ItemTemplate="{StaticResource DeviceTypeTemplateSelector}"/>
+                <Label Grid.Row="1" Text="{Binding Status}" Margin="5"/>
+            </Grid>
+        </Frame>
+    </ContentPage.Content>
+</ContentPage>

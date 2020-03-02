@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LDARtools.PhxAccess
@@ -173,182 +174,212 @@ namespace LDARtools.PhxAccess
             EnablePeriodicReadings(msgDriveLevels, false);
             EnablePeriodicReadings(msgFIDReadings, false);
             EnablePeriodicReadings(msgBatteryStatus, false);
+
+            StartHeartbeatLoop();
         }
 
-        public bool ShutdownNow { get; set; }
+        private bool _shutdownNow = false;
+        private object _shutdownSync = new object();
 
-        private Task messageThread = null;
+        //Don't call this on the main thread since it uses Monitor.Wait()
+        public void Shutdown()
+        {
+            _shutdownNow = true;
+
+            lock (_shutdownSync)
+            {
+                while (_messageThread != null && _heartbeatThread != null)
+                {
+                    Monitor.Wait(_shutdownSync, 500);
+                }
+            }
+        }
+
+        private Task _messageThread = null;
+
 
         private void StartMessageHandler()
         {
-            if (messageThread != null && messageThread.Status == TaskStatus.Running) return;
+            if (_messageThread != null && _messageThread.Status == TaskStatus.Running) return;
 
-            messageThread = new Task(() =>
+            _messageThread = new Task(() =>
             {
-                int errorcount = 0;
-
-                while (!ShutdownNow)
+                try
                 {
-                    if (Task.CurrentId != messageThread.Id)
+                    int errorcount = 0;
+
+                    while (!_shutdownNow)
                     {
-                        //WriteToLog("Old message thread shutting down");
-                        return;
-                    }
-                    try
-                    {
-                        var incomingMessage = ReadIncomingMessage();
-
-                        MessageReceived?.Invoke(null, incomingMessage.RawResponse);
-
-                        if (incomingMessage.MsgType == msgCommCheck)
+                        if (Task.CurrentId != _messageThread.Id)
                         {
-                            //WriteToLog("Received CHEK message");
+                            //WriteToLog("Old message thread shutting down");
+                            return;
                         }
-                        else if (incomingMessage.MsgType == msgSystemShutdownReport)
+                        try
                         {
-                            //WriteToLog(
-                            //    $"Received {incomingMessage.MsgType} message - {incomingMessage.UnparsedString}");
+                            var incomingMessage = ReadIncomingMessage();
 
-                            var localMessage = incomingMessage;
+                            MessageReceived?.Invoke(null, incomingMessage.RawResponse);
 
-                            Task.Run(() =>
+                            if (incomingMessage.MsgType == msgCommCheck)
                             {
-
-                                try
-                                {
-                                    OnCommandError(CommandErrorType.Shutdown, $"Error: {localMessage.UnparsedString}");
-                                }
-                                catch (Exception ex)
-                                {
-                                    //WriteToLog($"ERROR: problem with OnCommandError Shutdown: {ex.Message}");
-                                    //WriteExceptionToPhxLog(ex);
-                                }
-                            });
-
-                        }
-                        else if (incomingMessage.MsgType == msgErrorReport || incomingMessage.MsgType== msgSpontaneousErrorReport)
-                        {
-                            //WriteToLog($"ERROR: {incomingMessage} - {incomingMessage.UnparsedString}");
-
-                            string type = incomingMessage.Parameters.ContainsKey("TYPE")
-                                ? incomingMessage.Parameters["TYPE"].ToString()
-                                : null;
-
-                            int code = incomingMessage.Parameters.ContainsKey("CODE")
-                                ? int.Parse(incomingMessage.Parameters["CODE"].ToString())
-                                : -1;
-
-                            if (!string.IsNullOrWhiteSpace(type))
-                            {
-                                errors[type] = new KeyValuePair<DateTime, int>(Now, code);
+                                //WriteToLog("Received CHEK message");
                             }
-
-                            var localMessage = incomingMessage;
-
-                            Task.Run(() =>
+                            else if (incomingMessage.MsgType == msgSystemShutdownReport)
                             {
-                                try
-                                {
-                                    OnCommandError(CommandErrorType.Message, $"Error: {GetErrorMessage(localMessage)}");
-                                }
-                                catch (Exception ex)
-                                {
-                                    //WriteToLog($"ERROR: problem with OnCommandError: {ex.Message}");
-                                    //WriteExceptionToPhxLog(ex);
-                                }
-                            });
-
-                            if (type == msgStartAutoIgnitionSequence)
-                            {
-                                Task.Run(() =>
-                                {
-                                    try
-                                    {
-                                        OnCommandError(CommandErrorType.AutoIgnitionSequence, $"Error: {localMessage}");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        //WriteToLog(
-                                        //    $"ERROR: problem with OnCommandError AutoIgnitionSequence: {ex.Message}");
-                                        //WriteExceptionToPhxLog(ex);
-                                    }
-                                });
-
-                            }
-                        }
-                        else
-                        {
-                            if (incomingMessage.MsgType == msgReadings || incomingMessage.MsgType == msgDriveLevels ||
-                                incomingMessage.MsgType == msgFIDReadings ||
-                                incomingMessage.MsgType == msgBatteryStatus)
-                            {
-                                ParseReadings(incomingMessage);
+                                //WriteToLog(
+                                //    $"Received {incomingMessage.MsgType} message - {incomingMessage.UnparsedString}");
 
                                 var localMessage = incomingMessage;
 
                                 Task.Run(() =>
                                 {
-                                    if (localMessage.MsgType == msgFIDReadings ||
-                                        (!FidReadingsReportingEnabled && localMessage.MsgType == msgReadings) ||
-                                        (!FidReadingsReportingEnabled && !ReadingsReportingEnabled &&
-                                         localMessage.MsgType == msgDriveLevels) ||
-                                        (!FidReadingsReportingEnabled && !ReadingsReportingEnabled && !DriveLevelsReportingEnabled &&
-                                         localMessage.MsgType == msgBatteryStatus))
+
+                                    try
+                                    {
+                                        OnCommandError(CommandErrorType.Shutdown, $"Error: {localMessage.UnparsedString}");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                    //WriteToLog($"ERROR: problem with OnCommandError Shutdown: {ex.Message}");
+                                    //WriteExceptionToPhxLog(ex);
+                                }
+                                });
+
+                            }
+                            else if (incomingMessage.MsgType == msgErrorReport || incomingMessage.MsgType == msgSpontaneousErrorReport)
+                            {
+                                //WriteToLog($"ERROR: {incomingMessage} - {incomingMessage.UnparsedString}");
+
+                                string type = incomingMessage.Parameters.ContainsKey("TYPE")
+                                    ? incomingMessage.Parameters["TYPE"].ToString()
+                                    : null;
+
+                                int code = incomingMessage.Parameters.ContainsKey("CODE")
+                                    ? int.Parse(incomingMessage.Parameters["CODE"].ToString())
+                                    : -1;
+
+                                if (!string.IsNullOrWhiteSpace(type))
+                                {
+                                    errors[type] = new KeyValuePair<DateTime, int>(Now, code);
+                                }
+
+                                var localMessage = incomingMessage;
+
+                                Task.Run(() =>
+                                {
+                                    try
+                                    {
+                                        OnCommandError(CommandErrorType.Message, $"Error: {GetErrorMessage(localMessage)}");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                    //WriteToLog($"ERROR: problem with OnCommandError: {ex.Message}");
+                                    //WriteExceptionToPhxLog(ex);
+                                }
+                                });
+
+                                if (type == msgStartAutoIgnitionSequence)
+                                {
+                                    Task.Run(() =>
                                     {
                                         try
                                         {
-                                            var status = lockedStatus.ToDictionary(entry => entry.Key,
-                                                entry => entry.Value);
-
-                                            float ppm;
-                                            if (!float.TryParse(status["PPM"], out ppm))
-                                            {
-                                                ppm = 0.0F;
-                                            }
-
-                                            OnDataPolled(new DataPolledEventArgs(status, ppm));
+                                            OnCommandError(CommandErrorType.AutoIgnitionSequence, $"Error: {localMessage}");
                                         }
                                         catch (Exception ex)
                                         {
-                                            //WriteToLog($"ERROR: problem preparing polled data: {ex.Message}");
-                                            //WriteExceptionToPhxLog(ex);
-                                        }
+                                        //WriteToLog(
+                                        //    $"ERROR: problem with OnCommandError AutoIgnitionSequence: {ex.Message}");
+                                        //WriteExceptionToPhxLog(ex);
                                     }
-                                });
+                                    });
+
+                                }
                             }
                             else
                             {
-                                //WriteToLog($"Received {incomingMessage.MsgType} message");
+                                if (incomingMessage.MsgType == msgReadings || incomingMessage.MsgType == msgDriveLevels ||
+                                    incomingMessage.MsgType == msgFIDReadings ||
+                                    incomingMessage.MsgType == msgBatteryStatus)
+                                {
+                                    ParseReadings(incomingMessage);
+
+                                    var localMessage = incomingMessage;
+
+                                    Task.Run(() =>
+                                    {
+                                        if (localMessage.MsgType == msgFIDReadings ||
+                                            (!FidReadingsReportingEnabled && localMessage.MsgType == msgReadings) ||
+                                            (!FidReadingsReportingEnabled && !ReadingsReportingEnabled &&
+                                             localMessage.MsgType == msgDriveLevels) ||
+                                            (!FidReadingsReportingEnabled && !ReadingsReportingEnabled && !DriveLevelsReportingEnabled &&
+                                             localMessage.MsgType == msgBatteryStatus))
+                                        {
+                                            try
+                                            {
+                                                var status = lockedStatus.ToDictionary(entry => entry.Key,
+                                                    entry => entry.Value);
+
+                                                float ppm;
+                                                if (!float.TryParse(status["PPM"], out ppm))
+                                                {
+                                                    ppm = 0.0F;
+                                                }
+
+                                                OnDataPolled(new DataPolledEventArgs(status, ppm));
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                            //WriteToLog($"ERROR: problem preparing polled data: {ex.Message}");
+                                            //WriteExceptionToPhxLog(ex);
+                                        }
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    //WriteToLog($"Received {incomingMessage.MsgType} message");
+                                }
+
+                                receivedMessages.Add(incomingMessage);
                             }
 
-                            receivedMessages.Add(incomingMessage);
+                            Task.Delay(10).Wait(10);
+
+                            errorcount = 0;
                         }
-
-                        Task.Delay(10).Wait(10);
-
-                        errorcount = 0;
-                    }
-                    catch (Exception ex)
-                    {
-
-                        //WriteToLog($"ERROR: Message thread error #{errorcount}");
-
-                        //WriteExceptionToPhxLog(ex);
-
-                        errorcount++;
-
-                        Task.Run(() => { OnError(new ErrorEventArgs(ex)); });
-
-                        if (errorcount > 10)
+                        catch (Exception ex)
                         {
-                            //WriteToLog("ERROR: Message thread shutting down because of errors");
 
-                            Task.Run(() => { OnError(new ErrorEventArgs(new ReconnectNeededException())); });
+                            //WriteToLog($"ERROR: Message thread error #{errorcount}");
 
-                            ShutdownNow = true;
+                            //WriteExceptionToPhxLog(ex);
 
-                            return;
+                            errorcount++;
+
+                            Task.Run(() => { OnError(new ErrorEventArgs(ex)); });
+
+                            if (errorcount > 10)
+                            {
+                                //WriteToLog("ERROR: Message thread shutting down because of errors");
+
+                                Task.Run(() => { OnError(new ErrorEventArgs(new ReconnectNeededException())); });
+
+                                _shutdownNow = true;
+
+                                return;
+                            }
                         }
+                    }
+                }
+                finally
+                {
+                    _messageThread = null;
+
+                    lock (_shutdownSync)
+                    {
+                        Monitor.PulseAll(_shutdownSync);
                     }
                 }
 
@@ -356,8 +387,43 @@ namespace LDARtools.PhxAccess
 
             });
 
-            messageThread.Start();
+            _messageThread.Start();
             //WriteToLog("Message thread started");
+        }
+
+        private Task _heartbeatThread = null;
+
+        private void StartHeartbeatLoop()
+        {
+            _heartbeatThread = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!_shutdownNow)
+                    {
+                        try
+                        {
+                            await Task.Delay(900);
+
+                            var message = new CommMessage { MsgType = msgCommCheck };
+                            SendOutgoingMessage(message);
+                        }
+                        catch (Exception e)
+                        {
+
+                        }
+                    }
+                }
+                finally
+                {
+                    _heartbeatThread = null;
+
+                    lock (_shutdownSync)
+                    {
+                        Monitor.PulseAll(_shutdownSync);
+                    }
+                }
+            });
         }
 
         private string GetErrorMessage(CommMessage incomingMessage)

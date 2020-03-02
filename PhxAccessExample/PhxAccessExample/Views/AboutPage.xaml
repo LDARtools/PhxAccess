@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:mvvm="http://prismlibrary.com"
+             x:Class="PhxAccessExample.Views.AboutPage"
+             Title="{Binding Title}"
+             mvvm:ViewModelLocator.AutowireViewModel="True">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#2196F3</Color>
+            <Color x:Key="Accent">#96d1ff</Color>
+            <Color x:Key="LightTextColor">#999999</Color>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid BackgroundColor="White">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackLayout BackgroundColor="White" VerticalOptions="FillAndExpand" HorizontalOptions="Fill">
+            <StackLayout Orientation="Horizontal" HorizontalOptions="Center" VerticalOptions="Center">
+                <ContentView Padding="0,40,0,40" VerticalOptions="FillAndExpand">
+                    <Image Source="LDARtools.jpg" VerticalOptions="Center" HeightRequest="64" />
+                </ContentView>
+            </StackLayout>
+        </StackLayout>
+
+        <StackLayout Grid.Row="1" BackgroundColor="White" Orientation="Vertical" Padding="16,40,16,40" Spacing="10">
+            <Label FontSize="22" HorizontalTextAlignment="Center">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <FormattedString.Spans>
+                            <Span Text="PhxAccess Sample App" FontAttributes="Bold" FontSize="22" />
+                            <Span Text=" " />
+                            <Span Text="1.0" ForegroundColor="{StaticResource LightTextColor}" />
+                        </FormattedString.Spans>
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+            <Label HorizontalTextAlignment="Center">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <FormattedString.Spans>
+                            <Span Text="This app is written in C# and native APIs using the" />
+                            <Span Text=" " />
+                            <Span Text="Xamarin Platform" FontAttributes="Bold" />
+                            <Span Text=" to demonstrate how to effectively communicate with a " />
+                            <Span Text="phx42" FontAttributes="Bold" />
+                            <Span Text=" or " />
+                            <Span Text="phx21" FontAttributes="Bold" />
+                            <Span Text="." />
+                        </FormattedString.Spans>
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+        </StackLayout>
+        <Frame Grid.Row="2" 
+               WidthRequest="200"
+               HeightRequest="200"
+               CornerRadius="100"
+               BackgroundColor="LawnGreen"
+               HorizontalOptions="Center">
+            <Label Text="Discover" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" FontAttributes="Bold" FontSize="Large">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer
+                        Tapped="TapGestureRecognizer_OnTapped"
+                        NumberOfTapsRequired="1" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer
+                    Tapped="TapGestureRecognizer_OnTapped"
+                    NumberOfTapsRequired="1" />
+            </Frame.GestureRecognizers>
+        </Frame>
+        <Grid Grid.Row="3" BackgroundColor="White" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Margin="10" Text="Visit LDARtools.com"
+                    Command="{Binding OpenLDARToolsCommand}"
+                    BackgroundColor="White"
+                    TextColor="{StaticResource Primary}" 
+                    BorderColor="Gainsboro"/>
+            <Button Grid.Column="1" Margin="10" Text="Visit Project Site"
+                    Command="{Binding OpenProjectCommand}"
+                    BackgroundColor="White"
+                    TextColor="{StaticResource Primary}" 
+                    BorderColor="Gainsboro"/>
+        </Grid>
+    </Grid>
+
+</ContentPage>

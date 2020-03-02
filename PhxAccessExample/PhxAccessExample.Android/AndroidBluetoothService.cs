@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace PhxAccessExample.Droid
 {
@@ -46,22 +47,29 @@ namespace PhxAccessExample.Droid
         }
 
 
-        public (Stream, Stream) Connect(IBluetoothDevice device)
+        public async Task<(Stream, Stream)> Connect(IBluetoothDevice device)
         {
-            BluetoothDevice btDevice = (device as Device).BluetoothDevice;
+            try
+            {
+                BluetoothDevice btDevice = (device as Device).BluetoothDevice;
 
-            btDevice.FetchUuidsWithSdp();
-            //var parcelUuids = btDevice.GetUuids();
+                var bluetoothSocket = btDevice.CreateInsecureRfcommSocketToServiceRecord(SERIAL_UUID);
 
-            //var bondState = btDevice.BondState;
+                await Task.Delay(300);
 
-            var bluetoothSocket = btDevice.CreateInsecureRfcommSocketToServiceRecord(SERIAL_UUID);
+                bluetoothSocket.Connect();
 
-            bluetoothSocket.Connect();
+                await Task.Delay(300);
 
-            device.Socket = bluetoothSocket;
+                device.Socket = bluetoothSocket;
 
-            return (bluetoothSocket.InputStream, bluetoothSocket.OutputStream);
+                return (bluetoothSocket.InputStream, bluetoothSocket.OutputStream);
+            }
+            catch (System.Exception ex)
+            {
+
+                throw;
+            }
         }
 
         public void Disconnect(IBluetoothDevice device)
@@ -72,7 +80,6 @@ namespace PhxAccessExample.Droid
         public AndroidBluetoothService(Context context)
         {
             bluetoothAdapter = BluetoothAdapter.DefaultAdapter;
-            //Address = bluetoothAdapter?.Address;
 
             // Register for broadcasts when a device is discovered
             receiver = new Receiver();

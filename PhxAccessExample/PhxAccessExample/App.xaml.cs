@@ -35,6 +35,7 @@ namespace PhxAccessExample
             containerRegistry.RegisterForNavigation<AboutPage>();
             containerRegistry.RegisterForNavigation<DiscoverPage>();
             containerRegistry.RegisterForNavigation<Phx42DetailsPage>();
+            containerRegistry.RegisterForNavigation<Phx21DetailsPage>();
         }
     }
 }

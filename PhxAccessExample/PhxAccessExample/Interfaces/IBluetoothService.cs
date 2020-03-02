@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace PhxAccessExample.Interfaces
 {
@@ -15,7 +16,7 @@ namespace PhxAccessExample.Interfaces
 
         ObservableCollection<IBluetoothDevice> DiscoveredDevices { get; }
 
-        (Stream, Stream) Connect(IBluetoothDevice device);
+        Task<(Stream, Stream)> Connect(IBluetoothDevice device);
         void Disconnect(IBluetoothDevice device);
     }
 }

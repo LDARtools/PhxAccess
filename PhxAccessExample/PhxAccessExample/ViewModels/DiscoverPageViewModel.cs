@@ -19,7 +19,6 @@ namespace PhxAccessExample.ViewModels
         private readonly IBluetoothService _bluetoothService;
         private List<DeviceListItemViewModel> _discoveredDevices;
         private DeviceListItemViewModel _selectedDevice;
-        private Phx42 _phx42 = null;
         private string _status;
 
         public List<DeviceListItemViewModel> DiscoveredDevices
@@ -88,7 +87,10 @@ namespace PhxAccessExample.ViewModels
 
         private void DiscoveredDevices_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            DiscoveredDevices = _bluetoothService.DiscoveredDevices.Select(d => new DeviceListItemViewModel(d)).OrderByDescending(d => d.DeviceType == DeviceType.Phx42).ThenByDescending(d =>  d.DeviceType == DeviceType.Phx21).ToList();
+            DiscoveredDevices = _bluetoothService.DiscoveredDevices.Select(d => new DeviceListItemViewModel(d))
+                .GroupBy(d => d.Name).Select(g => g.First())
+                .OrderByDescending(d => d.DeviceType == DeviceType.Phx42)
+                .ThenByDescending(d =>  d.DeviceType == DeviceType.Phx21).ToList();
         }
 
         private void BluetoothService_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -133,15 +135,15 @@ namespace PhxAccessExample.ViewModels
 
                     _bluetoothService.StopDiscovery();
 
-                    var streams = _bluetoothService.Connect(device.BluetoothDevice);
+                    var streams = await _bluetoothService.Connect(device.BluetoothDevice);
 
                     if (device.DeviceType == DeviceType.Phx42)
                     {
-                        _phx42 = new Phx42(new StreamAdapter(streams.Item1), new StreamAdapter(streams.Item2));
+                         var phx42 = new Phx42(new StreamAdapter(streams.Item1), new StreamAdapter(streams.Item2));
 
                         NavigationParameters parameters = new NavigationParameters();
 
-                        parameters.Add("phx", _phx42);
+                        parameters.Add("phx", phx42);
                         parameters.Add("device", device.BluetoothDevice);
 
                         await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -150,14 +152,33 @@ namespace PhxAccessExample.ViewModels
 
                             if (!result.Success)
                             {
+                                Status = $"Could not navigate to 42 details page because: {result.Exception.Message}";
+                            }
+                        });
+                    }
+                    else if (device.DeviceType == DeviceType.Phx21)
+                    {
+                        var phx21 = new Phx21(new StreamAdapter(streams.Item1), new StreamAdapter(streams.Item2));
 
+                        NavigationParameters parameters = new NavigationParameters();
+
+                        parameters.Add("phx", phx21);
+                        parameters.Add("device", device.BluetoothDevice);
+
+                        await MainThread.InvokeOnMainThreadAsync(async () =>
+                        {
+                            var result = await NavigationService.NavigateAsync("Phx21DetailsPage", parameters);
+
+                            if (!result.Success)
+                            {
+                                Status = $"Could not navigate to 21 details page because: {result.Exception.Message}";
                             }
                         });
                     }
                 }
                 catch (Exception ex)
                 {
-
+                    Status = $"Could not connect because: {ex.Message}";
                 }
                 finally
                 {

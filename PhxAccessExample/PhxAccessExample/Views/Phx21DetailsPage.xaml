@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:mvvm="http://prismlibrary.com"
              mc:Ignorable="d"
-             x:Class="PhxAccessExample.Views.Phx42DetailsPage"
+             x:Class="PhxAccessExample.Views.Phx21DetailsPage"
              mvvm:ViewModelLocator.AutowireViewModel="True"
              Title="{Binding Name}">
     <ContentPage.Content>
@@ -43,10 +43,10 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Text="{Binding BatteryPercent}" VerticalOptions="Center"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding BatteryPercent, Mode=TwoWay}" MinimumTrackColor="Blue" ThumbColor="Blue"/>
+                        <Label Grid.Column="0" Text="{Binding BatteryVoltage}" VerticalOptions="Center"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="10" Value="{Binding BatteryVoltage, Mode=TwoWay}" MinimumTrackColor="Blue" ThumbColor="Blue"/>
                     </Grid>
-                    <Label Text="Battery Percent Charged" HorizontalOptions="Center"/>
+                    <Label Text="Battery Voltage" HorizontalOptions="Center"/>
                 </StackLayout>
             </Frame>
             <Frame Grid.Row="3" CornerRadius="150" WidthRequest="200" HeightRequest="200" BackgroundColor="LawnGreen" HorizontalOptions="Center" Margin="5">

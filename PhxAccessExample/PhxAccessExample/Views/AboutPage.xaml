@@ -17,8 +17,8 @@
     <Grid BackgroundColor="White">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackLayout BackgroundColor="White" VerticalOptions="FillAndExpand" HorizontalOptions="Fill">
@@ -45,10 +45,7 @@
                 <Label.FormattedText>
                     <FormattedString>
                         <FormattedString.Spans>
-                            <Span Text="This app is written in C# and native APIs using the" />
-                            <Span Text=" " />
-                            <Span Text="Xamarin Platform" FontAttributes="Bold" />
-                            <Span Text=" to demonstrate how to effectively communicate with a " />
+                            <Span Text="This app is written in C# and native APIs using the Xamarin Platform to demonstrate how to effectively communicate with a " />
                             <Span Text="phx42" FontAttributes="Bold" />
                             <Span Text=" or " />
                             <Span Text="phx21" FontAttributes="Bold" />
@@ -61,9 +58,10 @@
         <Frame Grid.Row="2" 
                WidthRequest="200"
                HeightRequest="200"
-               CornerRadius="100"
+               CornerRadius="150"
                BackgroundColor="LawnGreen"
-               HorizontalOptions="Center">
+               HorizontalOptions="Center"
+               VerticalOptions="Center">
             <Label Text="Discover" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" FontAttributes="Bold" FontSize="Large">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer

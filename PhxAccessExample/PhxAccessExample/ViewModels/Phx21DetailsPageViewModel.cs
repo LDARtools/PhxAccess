@@ -9,17 +9,18 @@ using Prism.Navigation;
 
 namespace PhxAccessExample.ViewModels
 {
-    public class Phx42DetailsPageViewModel : ViewModelBase
+    public class Phx21DetailsPageViewModel : ViewModelBase
     {
         private readonly IBluetoothService _bluetoothService;
-        private Phx42 _phx42 = null;
+        private Phx21 _phx21 = null;
         private IBluetoothDevice _device = null;
         private string _name;
         private float _ppm = -100;
         private double _h2Level = 0;
-        private double _batteryPercent = 6;
+        private double _batteryVoltage = 6;
         private string _status;
         private bool _igniteInProgress = false;
+        private DateTime? _igniteTime = null;
 
         public string Name
         {
@@ -44,10 +45,10 @@ namespace PhxAccessExample.ViewModels
             set => SetProperty(ref _h2Level, value);
         }
 
-        public double BatteryPercent
+        public double BatteryVoltage
         {
-            get => _batteryPercent;
-            set => SetProperty(ref _batteryPercent, value);
+            get => _batteryVoltage;
+            set => SetProperty(ref _batteryVoltage, value);
         }
 
         public string PpmLabel => Ppm < 0 ? "N/A" : (Ppm < 100 ? $"{Ppm:F2}" : $"{Ppm:F0}");
@@ -62,7 +63,7 @@ namespace PhxAccessExample.ViewModels
 
         public DelegateCommand IgniteCommand { get; }
 
-        public Phx42DetailsPageViewModel(INavigationService navigationService, IBluetoothService bluetoothService) : base(navigationService)
+        public Phx21DetailsPageViewModel(INavigationService navigationService, IBluetoothService bluetoothService) : base(navigationService)
         {
             _bluetoothService = bluetoothService;
             IgniteCommand = new DelegateCommand(ExecuteIgniteCommand, () => CanIgnite).ObservesProperty(() => CanIgnite);
@@ -71,8 +72,9 @@ namespace PhxAccessExample.ViewModels
         private void ExecuteIgniteCommand()
         {
             _igniteInProgress = true;
+            _igniteTime = DateTime.Now;
             RaisePropertyChanged(nameof(CanIgnite));
-            _phx42.Ignite();
+            _phx21.IgniteOn();
         }
 
         public override void OnNavigatedTo(INavigationParameters parameters)
@@ -83,7 +85,7 @@ namespace PhxAccessExample.ViewModels
             {
                 if (parameters.ContainsKey("phx"))
                 {
-                    _phx42 = parameters.GetValue<Phx42>("phx");
+                    _phx21 = parameters.GetValue<Phx21>("phx");
                 }
 
                 if (parameters.ContainsKey("device"))
@@ -97,19 +99,17 @@ namespace PhxAccessExample.ViewModels
                 //no logging so just eat it
             }
 
-            if (_phx42 == null || _device == null)
+            if (_phx21 == null || _device == null)
             {
                 NavigationService.GoBackAsync();
             }
 
-            _phx42.CommandError += Phx42_CommandError;
-            _phx42.Error += Phx42_Error;
-            _phx42.DataPolled += Phx42_DataPolled;
+            _phx21.Error += Phx21Error;
+            _phx21.DataPolled += Phx21DataPolled;
 
-            _phx42.SetPeriodicReportingInterval(1000);
-            _phx42.StartPeriodicReporting(true, true, false, true);
+            _phx21.StartPollingData(1000);
 
-            var version = _phx42.GetFirmwareVersion();
+            var version = _phx21.GetFirmwareVersion();
 
             Status = $"Firmware version: {version}";
         }
@@ -118,44 +118,55 @@ namespace PhxAccessExample.ViewModels
         {
             base.OnNavigatedFrom(parameters);
 
-            _phx42.CommandError -= Phx42_CommandError;
-            _phx42.Error -= Phx42_Error;
-            _phx42.DataPolled -= Phx42_DataPolled;
+            _phx21.Error -= Phx21Error;
+            _phx21.DataPolled -= Phx21DataPolled;
 
             Task.Run(() =>
             {
-                _phx42.Shutdown();
+                _phx21.SendGoodbye();
+                _phx21.Shutdown();
                 _bluetoothService.Disconnect(_device);
             });
         }
 
-        private void Phx42_DataPolled(object sender, DataPolledEventArgs e)
+        private void Phx21DataPolled(object sender, DataPolledEventArgs e)
         {
-            Ppm = e.Ppm;
+            if (e.PhxProperties.ContainsKey(nameof(Phx21Status.IsIgnited)) && e.PhxProperties[nameof(Phx21Status.IsIgnited)] == bool.FalseString)
+            {
+                Ppm = -100;
+                RaisePropertyChanged(nameof(CanIgnite));
+            }
+            else
+            {
+                _igniteInProgress = false;
+                _igniteTime = null;
+                Ppm = e.Ppm;
+            }
 
-            if (e.PhxProperties.ContainsKey(Phx42PropNames.HPH2) && double.TryParse(e.PhxProperties[Phx42PropNames.HPH2], out var h))
+            if (e.PhxProperties.ContainsKey(nameof(Phx21Status.TankPressure)) && double.TryParse(e.PhxProperties[nameof(Phx21Status.TankPressure)], out var h))
             {
                 H2Level = h;
             }
 
-            if (e.PhxProperties.ContainsKey(Phx42PropNames.BatteryCharge) && double.TryParse(e.PhxProperties[Phx42PropNames.BatteryCharge], out var b))
+            if (e.PhxProperties.ContainsKey(nameof(Phx21Status.BatteryVoltage)) && double.TryParse(e.PhxProperties[nameof(Phx21Status.BatteryVoltage)], out var b))
             {
-                BatteryPercent = b;
+                BatteryVoltage = b;
+            }
+
+            if (_igniteTime.HasValue && DateTime.Now - _igniteTime.Value > TimeSpan.FromSeconds(90))
+            {
+                _igniteTime = null;
+                _igniteInProgress = false;
+                Status = "Ignite failed";
             }
         }
 
-        private void Phx42_Error(object sender, ErrorEventArgs e)
+        private void Phx21Error(object sender, ErrorEventArgs e)
         {
             _igniteInProgress = false;
+            _igniteTime = null;
             RaisePropertyChanged(nameof(CanIgnite));
-            Status = $"phx42 Error: {e.Exception.Message}";
-        }
-
-        private void Phx42_CommandError(object sender, CommandErrorEventArgs e)
-        {
-            _igniteInProgress = false;
-            RaisePropertyChanged(nameof(CanIgnite));
-            Status = $"phx42 {e.Error}";
+            Status = $"phx21 Error: {e.Exception.Message}";
         }
     }
 }

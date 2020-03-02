@@ -109,7 +109,6 @@ namespace LDARtools.PhxAccess
     /// </summary>
     public sealed class Phx21
     {
-        public bool ShutdownNow { get; set; }
         public int PollingInterval { get; private set; } = 250;
 
         public DateTime StatusDateTime { get; private set; }
@@ -408,7 +407,23 @@ namespace LDARtools.PhxAccess
 
         private Task _sendTask = null;
         private Task _receiveTask = null;
-        private bool _receiveAlive = false;
+
+        private bool _shutdownNow = false;
+        private object _shutdownSync = new object();
+
+        //Don't call this on the main thread since it uses Monitor.Wait()
+        public void Shutdown()
+        {
+            _shutdownNow = true;
+
+            lock (_shutdownSync)
+            {
+                while (_sendTask != null && _receiveTask != null)
+                {
+                    Monitor.Wait(_shutdownSync, 500);
+                }
+            }
+        }
 
         private void StartMessageHandler()
         {
@@ -418,42 +433,54 @@ namespace LDARtools.PhxAccess
                 {
                     var errorcount = 0;
 
-                    while (!ShutdownNow || ShutdownNow && _receiveAlive)
-                        try
-                        {
-                            while (sendMessages.Any())
+                    try
+                    {
+                        while (!_shutdownNow || (_shutdownNow && _receiveTask != null))
+                            try
                             {
-                                BluetoothMessage message;
-                                if (sendMessages.TryDequeue(out message))
+                                while (sendMessages.Any())
                                 {
-                                    _outputStream.Flush();
-                                    _outputStream.Write(message.Bytes, message.Offest, message.Length);
-                                    _outputStream.Flush();
+                                    BluetoothMessage message;
+                                    if (sendMessages.TryDequeue(out message))
+                                    {
+                                        _outputStream.Flush();
+                                        _outputStream.Write(message.Bytes, message.Offest, message.Length);
+                                        _outputStream.Flush();
+                                    }
+                                }
+
+                                Task.Delay(10).Wait();
+
+                                errorcount = 0;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (_goodbyeSent) break;
+
+                                //WriteToLog("Message thread error #" + errorcount);
+                                //WriteExceptionToPhxLog(ex);
+                                errorcount++;
+
+                                Task.Run(() => { OnError(new ErrorEventArgs(ex)); });
+
+                                if (errorcount > 10)
+                                {
+                                    //WriteToLog("Message thread shutting down because of errors");
+                                    Task.Run(() => { OnError(new ErrorEventArgs(new Reconnect21NeededException())); });
+                                    _shutdownNow = true;
+                                    return;
                                 }
                             }
+                    }
+                    finally
+                    {
+                        _sendTask = null;
 
-                            Task.Delay(10).Wait();
-
-                            errorcount = 0;
-                        }
-                        catch (Exception ex)
+                        lock (_shutdownSync)
                         {
-                            if (_goodbyeSent) break;
-
-                            //WriteToLog("Message thread error #" + errorcount);
-                            //WriteExceptionToPhxLog(ex);
-                            errorcount++;
-
-                            Task.Run(() => { OnError(new ErrorEventArgs(ex)); });
-
-                            if (errorcount > 10)
-                            {
-                                //WriteToLog("Message thread shutting down because of errors");
-                                Task.Run(() => { OnError(new ErrorEventArgs(new Reconnect21NeededException())); });
-                                ShutdownNow = true;
-                                return;
-                            }
+                            Monitor.PulseAll(_shutdownSync);
                         }
+                    }
 
                     //WriteToLog("Message thread shutting down");
                 });
@@ -466,12 +493,11 @@ namespace LDARtools.PhxAccess
             {
                 _receiveTask = new Task(() =>
                 {
-                    _receiveAlive = true;
                     var errorcount = 0;
 
                     try
                     {
-                        while (!ShutdownNow || ShutdownNow && inPollingAction)
+                        while (!_shutdownNow || (_shutdownNow && inPollingAction))
                             try
                             {
                                 var messageBytes = GetNextResponse();
@@ -510,7 +536,7 @@ namespace LDARtools.PhxAccess
                                 {
                                     //WriteToLog("Receive thread shutting down because of errors");
                                     Task.Run(() => { OnError(new ErrorEventArgs(new Reconnect21NeededException())); });
-                                    ShutdownNow = true;
+                                    _shutdownNow = true;
                                     return;
                                 }
                             }
@@ -519,7 +545,12 @@ namespace LDARtools.PhxAccess
                     }
                     finally
                     {
-                        _receiveAlive = false;
+                        _receiveTask = null;
+
+                        lock (_shutdownSync)
+                        {
+                            Monitor.PulseAll(_shutdownSync);
+                        }
                     }
                 });
 
@@ -562,7 +593,7 @@ namespace LDARtools.PhxAccess
                 try
                 {
                     float ppm;
-                    if (ShutdownNow) return;
+                    if (_shutdownNow) return;
 
                     CurrentStatus = ReadDataExtended();
                     ppm = (float) CurrentStatus.Ppm;

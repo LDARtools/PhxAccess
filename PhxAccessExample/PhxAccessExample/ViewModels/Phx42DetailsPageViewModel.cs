@@ -50,7 +50,7 @@ namespace PhxAccessExample.ViewModels
             set => SetProperty(ref _batteryPercent, value);
         }
 
-        public string PpmLabel => Ppm < 0 ? "N/A" : (Ppm < 100 ? $"{Ppm:F2}" : $"{Ppm:F0}");
+        public string PpmLabel => Ppm >= 0 ? (Ppm < 100 ? $"{Ppm:F2}" : $"{Ppm:F0}") : (Ppm < -99 ? "Not Ignited" : $"Error code {Ppm:F2}");
 
         public string Status
         {

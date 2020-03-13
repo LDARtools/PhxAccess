@@ -529,7 +529,7 @@ namespace LDARtools.PhxAccess
                                 Math.Round(float.Parse(parameter.Value.ToString()), 3).ToString();
                             break;
                         case "CALPPM":
-                            lockedStatus["PPM"] = parameter.Value.ToString();
+                            lockedStatus[Phx42PropNames.PPM] = parameter.Value.ToString();
 
                             LastPpms.Add(decimal.Parse(lockedStatus["PPM"]));
 
@@ -574,9 +574,9 @@ namespace LDARtools.PhxAccess
                 }
             }
 
-            if (readings.Parameters.ContainsKey("CALPPM"))
+            if (readings.Parameters.ContainsKey("CALPPM") && decimal.TryParse(lockedStatus[Phx42PropNames.PPM], out var ppm))
             {
-                if (lockedStatus[Phx42PropNames.PPM] == "-100.00")
+                if (ppm < decimal.Zero)
                 {
                     IsRunning = false;
                     lockedStatus["IsIgnited"] = bool.FalseString;
